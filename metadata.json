@@ -1,0 +1,5 @@
+{
+  "name": "Nano Banana Image Studio",
+  "description": "An AI-powered image editing application using Google's 'nano-banana' model (gemini-2.5-flash-image-preview). Upload an image, provide a text prompt to edit it, and use the special 'Maintain Character Consistency' feature to preserve the subject's identity.",
+  "requestFramePermissions": []
+}
