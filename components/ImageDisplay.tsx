@@ -1,6 +1,6 @@
-
 import React from 'react';
 import { ImageFile } from '../types';
+import ZoomableImage from './ZoomableImage';
 
 interface ImageDisplayProps {
     originalImage: ImageFile | null;
@@ -54,7 +54,7 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, editedImage,
             <div className="flex flex-col items-center">
                 <h3 className="text-lg font-semibold mb-2 text-slate-400">Original</h3>
                 {originalImage ? (
-                    <img src={originalImage.base64} alt="Original" className="w-full aspect-square object-contain bg-slate-800 rounded-lg" />
+                    <ZoomableImage src={originalImage.base64} alt="Original" />
                 ) : (
                     <ImagePlaceholder title="Original Image" />
                 )}
@@ -62,7 +62,7 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, editedImage,
             <div className="flex flex-col items-center">
                 <h3 className="text-lg font-semibold mb-2 text-slate-400">Edited</h3>
                 {editedImage ? (
-                    <img src={editedImage} alt="Edited" className="w-full aspect-square object-contain bg-slate-800 rounded-lg" />
+                    <ZoomableImage src={editedImage} alt="Edited" />
                 ) : (
                     <ImagePlaceholder title="Edited Image" isLoading={isLoading} />
                 )}

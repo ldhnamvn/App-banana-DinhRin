@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 interface ControlsProps {
@@ -10,6 +9,15 @@ interface ControlsProps {
     setMaintainConsistency: (value: boolean) => void;
     isImageUploaded: boolean;
 }
+
+const examplePrompts = [
+    "Add sunglasses to the person.",
+    "Change the background to a futuristic city.",
+    "Make the shirt a vibrant red color.",
+    "Give the person a pirate hat.",
+    "Apply a vintage, black and white photo style.",
+    "Surround them with floating magical orbs.",
+];
 
 const Controls: React.FC<ControlsProps> = ({
     prompt,
@@ -29,8 +37,26 @@ const Controls: React.FC<ControlsProps> = ({
                 rows={4}
                 className="w-full bg-slate-900 border border-slate-600 rounded-md p-3 focus:ring-2 focus:ring-cyan-500 focus:border-cyan-500 transition-colors placeholder-slate-500 disabled:opacity-50"
                 disabled={!isImageUploaded || isGenerating}
+                aria-label="Image editing prompt"
             />
-            <div className="flex items-center space-x-3">
+
+            <div className="flex flex-col gap-3">
+                 <p className="text-sm font-medium text-slate-400">Try an example:</p>
+                 <div className="flex flex-wrap gap-2">
+                    {examplePrompts.map((p) => (
+                        <button
+                            key={p}
+                            onClick={() => setPrompt(p)}
+                            disabled={!isImageUploaded || isGenerating}
+                            className="px-3 py-1 bg-slate-700 text-slate-300 rounded-full text-xs hover:bg-cyan-600 hover:text-white transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-slate-700"
+                        >
+                            {p}
+                        </button>
+                    ))}
+                 </div>
+            </div>
+
+            <div className="flex items-center space-x-3 mt-2">
                 <input
                     type="checkbox"
                     id="consistency"
@@ -46,11 +72,11 @@ const Controls: React.FC<ControlsProps> = ({
             <button
                 onClick={onGenerate}
                 disabled={isGenerating || !isImageUploaded || !prompt.trim()}
-                className="w-full flex items-center justify-center bg-cyan-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-cyan-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-cyan-500"
+                className="w-full flex items-center justify-center bg-cyan-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-cyan-500 disabled:bg-slate-600 disabled:cursor-not-allowed transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-cyan-500 mt-2"
             >
                 {isGenerating ? (
                     <>
-                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
@@ -70,4 +96,3 @@ const Controls: React.FC<ControlsProps> = ({
 };
 
 export default Controls;
-
