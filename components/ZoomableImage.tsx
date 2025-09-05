@@ -1,14 +1,17 @@
+
 import React, { useState, useRef, WheelEvent, MouseEvent, useEffect } from 'react';
 
 interface ZoomableImageProps {
     src: string;
     alt: string;
+    brightness?: number;
+    contrast?: number;
 }
 
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 5;
 
-const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt }) => {
+const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, brightness = 100, contrast = 100 }) => {
     const [scale, setScale] = useState(1);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
@@ -111,6 +114,7 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt }) => {
                     style={{
                         transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
                         transition: isDraggingRef.current ? 'none' : 'transform 0.1s ease-out',
+                        filter: `brightness(${brightness / 100}) contrast(${contrast / 100})`,
                     }}
                     draggable="false"
                 />
