@@ -1,7 +1,7 @@
-
-import React from 'react';
+import React, { useState } from 'react';
 import { ImageFile } from '../types';
 import ZoomableImage from './ZoomableImage';
+import CropModal from './CropModal';
 
 interface ImageDisplayProps {
     originalImage: ImageFile | null;
@@ -37,6 +37,18 @@ const ImagePlaceholder: React.FC<{ title: string, isLoading?: boolean, loadingTi
 
 
 const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, editedImage, bgRemovedImage, isLoading, isRemovingBg, brightness, contrast }) => {
+    const [isCropModalOpen, setIsCropModalOpen] = useState(false);
+    const [imageToCrop, setImageToCrop] = useState<{ src: string; fileName: string } | null>(null);
+
+    const handleOpenCropModal = (src: string, fileName: string) => {
+        setImageToCrop({ src, fileName });
+        setIsCropModalOpen(true);
+    };
+
+    const handleCloseCropModal = () => {
+        setIsCropModalOpen(false);
+        setImageToCrop(null);
+    };
     
     const handleDownload = (image: string, baseName: string, suffix: string) => {
         if (!image) return;
@@ -61,62 +73,92 @@ const ImageDisplay: React.FC<ImageDisplayProps> = ({ originalImage, editedImage,
     };
     
     return (
-        <div className="flex flex-col flex-grow w-full gap-6">
-            <div className="flex flex-col items-center">
-                <h3 className="text-lg font-semibold mb-2 text-slate-400">Original</h3>
-                {originalImage ? (
-                    <ZoomableImage 
-                        src={originalImage.base64} 
-                        alt="Original" 
-                        brightness={brightness}
-                        contrast={contrast}
-                    />
-                ) : (
-                    <ImagePlaceholder title="Original Image" />
-                )}
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                 <div className="flex flex-col items-center">
-                    <h3 className="text-lg font-semibold mb-2 text-slate-400">Background Removed</h3>
-                    {bgRemovedImage ? (
-                        <ZoomableImage src={bgRemovedImage} alt="Background Removed" />
-                    ) : (
-                        <ImagePlaceholder title="Background Removed" isLoading={isRemovingBg} loadingTitle="Removing background..." />
-                    )}
-                    {bgRemovedImage && originalImage && (
-                        <button
-                            onClick={() => handleDownload(bgRemovedImage, originalImage.file.name, 'bg_removed')}
-                            className="mt-4 w-full max-w-xs bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-500 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500 flex items-center justify-center"
-                        >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
-                               <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                            Download Image
-                        </button>
-                    )}
-                </div>
+        <>
+            <div className="flex flex-col flex-grow w-full gap-6">
                 <div className="flex flex-col items-center">
-                    <h3 className="text-lg font-semibold mb-2 text-slate-400">Edited</h3>
-                    {editedImage ? (
-                        <ZoomableImage src={editedImage} alt="Edited" />
+                    <h3 className="text-lg font-semibold mb-2 text-slate-400">Original</h3>
+                    {originalImage ? (
+                        <ZoomableImage 
+                            src={originalImage.base64} 
+                            alt="Original" 
+                            brightness={brightness}
+                            contrast={contrast}
+                            onCrop={() => handleOpenCropModal(originalImage.base64, originalImage.file.name)}
+                        />
                     ) : (
-                        <ImagePlaceholder title="Edited Image" isLoading={isLoading} />
+                        <ImagePlaceholder title="Original Image" />
                     )}
-                    {editedImage && originalImage && (
+                    {originalImage && (
                         <button
-                            onClick={() => handleDownload(editedImage, originalImage.file.name, 'edited')}
+                            onClick={() => handleDownload(originalImage.base64, originalImage.file.name, 'original')}
                             className="mt-4 w-full max-w-xs bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-500 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500 flex items-center justify-center"
                         >
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
                                <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
                             </svg>
-                            Download Edited Image
+                            Download Original Image
                         </button>
                     )}
                 </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                     <div className="flex flex-col items-center">
+                        <h3 className="text-lg font-semibold mb-2 text-slate-400">Background Removed</h3>
+                        {bgRemovedImage ? (
+                            <ZoomableImage 
+                                src={bgRemovedImage} 
+                                alt="Background Removed"
+                                onCrop={() => handleOpenCropModal(bgRemovedImage, originalImage?.file.name || 'image.png')}
+                            />
+                        ) : (
+                            <ImagePlaceholder title="Background Removed" isLoading={isRemovingBg} loadingTitle="Removing background..." />
+                        )}
+                        {bgRemovedImage && originalImage && (
+                            <button
+                                onClick={() => handleDownload(bgRemovedImage, originalImage.file.name, 'bg_removed')}
+                                className="mt-4 w-full max-w-xs bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-500 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500 flex items-center justify-center"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                   <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                                Download BG Removed Image
+                            </button>
+                        )}
+                    </div>
+                    <div className="flex flex-col items-center">
+                        <h3 className="text-lg font-semibold mb-2 text-slate-400">Edited</h3>
+                        {editedImage ? (
+                            <ZoomableImage 
+                                src={editedImage} 
+                                alt="Edited" 
+                                onCrop={() => handleOpenCropModal(editedImage, originalImage?.file.name || 'image.png')}
+                            />
+                        ) : (
+                            <ImagePlaceholder title="Edited Image" isLoading={isLoading} />
+                        )}
+                        {editedImage && originalImage && (
+                            <button
+                                onClick={() => handleDownload(editedImage, originalImage.file.name, 'edited')}
+                                className="mt-4 w-full max-w-xs bg-green-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-green-500 transition-all duration-300 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-slate-900 focus:ring-green-500 flex items-center justify-center"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                                   <path fillRule="evenodd" d="M3 17a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm3.293-7.707a1 1 0 011.414 0L9 10.586V3a1 1 0 112 0v7.586l1.293-1.293a1 1 0 111.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clipRule="evenodd" />
+                                </svg>
+                                Download Edited Image
+                            </button>
+                        )}
+                    </div>
+                </div>
             </div>
-        </div>
+            {imageToCrop && (
+                <CropModal
+                    isOpen={isCropModalOpen}
+                    onClose={handleCloseCropModal}
+                    imageSrc={imageToCrop.src}
+                    originalFileName={imageToCrop.fileName}
+                />
+            )}
+        </>
     );
 };
 

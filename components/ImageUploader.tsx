@@ -2,7 +2,7 @@
 import React, { useCallback, useRef } from 'react';
 
 interface ImageUploaderProps {
-    onImageUpload: (file: File) => void;
+    onImageUpload: (files: File[]) => void;
     imagePreview: string | null;
 }
 
@@ -10,8 +10,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, imagePrevi
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-        if (event.target.files && event.target.files[0]) {
-            onImageUpload(event.target.files[0]);
+        if (event.target.files && event.target.files.length > 0) {
+            onImageUpload(Array.from(event.target.files));
         }
     };
 
@@ -27,8 +27,8 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, imagePrevi
     const handleDrop = useCallback((event: React.DragEvent<HTMLLabelElement>) => {
         event.preventDefault();
         event.stopPropagation();
-        if (event.dataTransfer.files && event.dataTransfer.files[0]) {
-            onImageUpload(event.dataTransfer.files[0]);
+        if (event.dataTransfer.files && event.dataTransfer.files.length > 0) {
+            onImageUpload(Array.from(event.dataTransfer.files));
         }
     }, [onImageUpload]);
 
@@ -40,6 +40,7 @@ const ImageUploader: React.FC<ImageUploaderProps> = ({ onImageUpload, imagePrevi
                 onChange={handleFileChange}
                 accept="image/png, image/jpeg, image/webp"
                 className="hidden"
+                multiple
             />
             <label
                 onClick={handleClick}

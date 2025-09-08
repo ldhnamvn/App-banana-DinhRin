@@ -10,11 +10,13 @@ import Controls from './components/Controls';
 import Loader from './components/Loader';
 import ErrorMessage from './components/ErrorMessage';
 import Footer from './components/Footer';
+import ThumbnailGallery from './components/ThumbnailGallery';
 
 const App: React.FC = () => {
-    const [originalImage, setOriginalImage] = useState<ImageFile | null>(null);
-    const [editedImage, setEditedImage] = useState<string | null>(null);
-    const [bgRemovedImage, setBgRemovedImage] = useState<string | null>(null);
+    const [originalImages, setOriginalImages] = useState<ImageFile[]>([]);
+    const [activeImageIndex, setActiveImageIndex] = useState<number | null>(null);
+    const [editedImages, setEditedImages] = useState<Record<number, string>>({});
+    const [bgRemovedImages, setBgRemovedImages] = useState<Record<number, string>>({});
     const [prompt, setPrompt] = useState<string>('');
     const [maintainConsistency, setMaintainConsistency] = useState<boolean>(true);
     const [isLoading, setIsLoading] = useState<boolean>(false);
@@ -23,44 +25,70 @@ const App: React.FC = () => {
     const [brightness, setBrightness] = useState<number>(100);
     const [contrast, setContrast] = useState<number>(100);
 
-    const handleImageUpload = (file: File) => {
-        const reader = new FileReader();
-        reader.onloadend = () => {
-            setOriginalImage({
-                file,
-                base64: reader.result as string,
+    const handleImageUpload = (files: File[]) => {
+        const readers = files.map(file => {
+            return new Promise<ImageFile>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    if (typeof reader.result === 'string') {
+                        resolve({ file, base64: reader.result });
+                    } else {
+                        reject(new Error("Failed to read file as data URL."));
+                    }
+                };
+                reader.onerror = (error) => reject(error);
+                reader.readAsDataURL(file);
             });
-            setEditedImage(null);
-            setBgRemovedImage(null);
-            setError(null);
-            setBrightness(100);
-            setContrast(100);
-        };
-        reader.onerror = () => {
-            setError("Failed to read the image file.");
-        };
-        reader.readAsDataURL(file);
+        });
+
+        Promise.all(readers)
+            .then(newImages => {
+                setOriginalImages(newImages);
+                setActiveImageIndex(newImages.length > 0 ? 0 : null);
+                setEditedImages({});
+                setBgRemovedImages({});
+                setError(null);
+                setPrompt('');
+                setBrightness(100);
+                setContrast(100);
+            })
+            .catch(err => {
+                console.error(err);
+                setError("Failed to read one or more image files.");
+            });
     };
 
+    const handleSelectImage = (index: number) => {
+        setActiveImageIndex(index);
+    };
+    
+    const activeImage = activeImageIndex !== null ? originalImages[activeImageIndex] : null;
+    const activeEditedImage = activeImageIndex !== null ? editedImages[activeImageIndex] : null;
+    const activeBgRemovedImage = activeImageIndex !== null ? bgRemovedImages[activeImageIndex] : null;
+
     const handleRemoveBackground = async () => {
-        if (!originalImage) {
-            setError("Please upload an image first.");
+        if (!activeImage || activeImageIndex === null) {
+            setError("Please select an image first.");
             return;
         }
 
         setIsRemovingBg(true);
         setError(null);
-        setBgRemovedImage(null);
+        setBgRemovedImages(prev => {
+            const newState = { ...prev };
+            delete newState[activeImageIndex];
+            return newState;
+        });
 
         const bgRemovePrompt = "Isolate the main subject and remove the background, making it transparent. The output must be a PNG with a transparent background.";
 
         try {
-            let base64ToProcess = originalImage.base64;
-            let mimeTypeForApi = originalImage.file.type;
+            let base64ToProcess = activeImage.base64;
+            let mimeTypeForApi = activeImage.file.type;
 
             if (brightness !== 100 || contrast !== 100) {
                 base64ToProcess = await applyImageAdjustments(
-                    originalImage.base64,
+                    activeImage.base64,
                     brightness,
                     contrast
                 );
@@ -75,8 +103,7 @@ const App: React.FC = () => {
             const result = await editImageWithGemini(base64Data, mimeTypeForApi, bgRemovePrompt);
 
             if (result.image) {
-                // The model should return PNG for transparency
-                setBgRemovedImage(`data:image/png;base64,${result.image}`);
+                setBgRemovedImages(prev => ({ ...prev, [activeImageIndex]: `data:image/png;base64,${result.image}` }));
             } else {
                 setError(result.text || "The model did not return an image for background removal. It might have refused the request.");
             }
@@ -90,8 +117,8 @@ const App: React.FC = () => {
     };
 
     const handleGenerate = async () => {
-        if (!originalImage) {
-            setError("Please upload an image first.");
+        if (!activeImage || activeImageIndex === null) {
+            setError("Please select an image first.");
             return;
         }
         if (!prompt.trim()) {
@@ -101,20 +128,23 @@ const App: React.FC = () => {
 
         setIsLoading(true);
         setError(null);
-        setEditedImage(null);
+        setEditedImages(prev => {
+            const newState = { ...prev };
+            delete newState[activeImageIndex];
+            return newState;
+        });
 
-        // Prepend consistency instruction if checked
         const finalPrompt = maintainConsistency
             ? `CRITICAL INSTRUCTION: Edit the image based on the following request. It is absolutely essential that you DO NOT change the person's face or identity. Preserve the facial features and unique characteristics of the subject perfectly. Now, here is the request: ${prompt}`
             : prompt;
         
         try {
-             let base64ToProcess = originalImage.base64;
-             let mimeTypeForApi = originalImage.file.type;
+             let base64ToProcess = activeImage.base64;
+             let mimeTypeForApi = activeImage.file.type;
 
              if (brightness !== 100 || contrast !== 100) {
                  base64ToProcess = await applyImageAdjustments(
-                     originalImage.base64,
+                     activeImage.base64,
                      brightness,
                      contrast
                  );
@@ -129,7 +159,7 @@ const App: React.FC = () => {
             const result = await editImageWithGemini(base64Data, mimeTypeForApi, finalPrompt);
             
             if (result.image) {
-                setEditedImage(`data:${result.mimeType || 'image/png'};base64,${result.image}`);
+                setEditedImages(prev => ({ ...prev, [activeImageIndex]: `data:${result.mimeType || 'image/png'};base64,${result.image}` }));
             } else {
                  setError(result.text || "The model did not return an image. It might have refused the request. Please try a different prompt.");
             }
@@ -148,8 +178,9 @@ const App: React.FC = () => {
             <Header />
             <main className="flex-grow container mx-auto p-4 md:p-6 lg:p-8 flex flex-col lg:flex-row gap-8">
                 <div className="w-full lg:w-1/3 flex flex-col gap-6 bg-slate-800/50 p-6 rounded-2xl border border-slate-700 shadow-2xl">
-                    <h2 className="text-xl font-bold text-cyan-400">1. Upload Your Image</h2>
-                    <ImageUploader onImageUpload={handleImageUpload} imagePreview={originalImage?.base64} />
+                    <h2 className="text-xl font-bold text-cyan-400">1. Upload Your Image(s)</h2>
+                    <ImageUploader onImageUpload={handleImageUpload} imagePreview={originalImages[0]?.base64 || null} />
+                    <ThumbnailGallery images={originalImages} activeIndex={activeImageIndex} onSelect={handleSelectImage} />
                     
                     <h2 className="text-xl font-bold text-cyan-400 mt-4">2. Describe Your Edit</h2>
                     <Controls
@@ -159,7 +190,7 @@ const App: React.FC = () => {
                         onGenerate={handleGenerate}
                         maintainConsistency={maintainConsistency}
                         setMaintainConsistency={setMaintainConsistency}
-                        isImageUploaded={!!originalImage}
+                        isImageUploaded={!!activeImage}
                         onRemoveBackground={handleRemoveBackground}
                         isRemovingBg={isRemovingBg}
                         brightness={brightness}
@@ -171,9 +202,9 @@ const App: React.FC = () => {
                 <div className="w-full lg:w-2/3 flex flex-col">
                     <ErrorMessage error={error} clearError={() => setError(null)} />
                     <ImageDisplay
-                        originalImage={originalImage}
-                        editedImage={editedImage}
-                        bgRemovedImage={bgRemovedImage}
+                        originalImage={activeImage}
+                        editedImage={activeEditedImage}
+                        bgRemovedImage={activeBgRemovedImage}
                         isLoading={isLoading}
                         isRemovingBg={isRemovingBg}
                         brightness={brightness}

@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, WheelEvent, MouseEvent, useEffect } from 'react';
 
 interface ZoomableImageProps {
@@ -6,12 +5,13 @@ interface ZoomableImageProps {
     alt: string;
     brightness?: number;
     contrast?: number;
+    onCrop: () => void;
 }
 
 const MIN_SCALE = 0.5;
 const MAX_SCALE = 5;
 
-const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, brightness = 100, contrast = 100 }) => {
+const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, brightness = 100, contrast = 100, onCrop }) => {
     const [scale, setScale] = useState(1);
     const [position, setPosition] = useState({ x: 0, y: 0 });
     const containerRef = useRef<HTMLDivElement>(null);
@@ -120,6 +120,12 @@ const ZoomableImage: React.FC<ZoomableImageProps> = ({ src, alt, brightness = 10
                 />
             </div>
             <div className="absolute bottom-2 right-2 flex items-center gap-1 bg-slate-900/70 backdrop-blur-sm p-1.5 rounded-lg border border-slate-700 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity duration-300">
+                 <button onClick={onCrop} title="Crop Image" className="p-1 rounded-md hover:bg-slate-700 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M10 2a1 1 0 011 1v4h4a1 1 0 110 2h-5a1 1 0 01-1-1V3a1 1 0 011-1zm-1-1a1 1 0 00-1 1v5a1 1 0 001 1h5a1 1 0 100-2H5V2a1 1 0 00-1-1H3a1 1 0 00-1 1v14a1 1 0 001 1h14a1 1 0 001-1v-1a1 1 0 10-2 0v.5a.5.5 0 01-.5.5h-13a.5.5 0 01-.5-.5v-13a.5.5 0 01.5-.5H4a1 1 0 100-2H3z" clipRule="evenodd" />
+                    </svg>
+                </button>
+                <div className="w-px h-5 bg-slate-600 mx-1"></div>
                 <button onClick={() => zoom('out')} title="Zoom Out" className="p-1 rounded-md hover:bg-slate-700 disabled:opacity-50 transition-colors" disabled={scale <= MIN_SCALE}>
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" /></svg>
                 </button>

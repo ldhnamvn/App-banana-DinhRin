@@ -1,5 +1,5 @@
 {
-  "name": "nano-banana-image-studio",
+  "name": "dình-rin-nano-banana-image-studio",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -11,7 +11,8 @@
   "dependencies": {
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "@google/genai": "^1.17.0"
+    "@google/genai": "^1.17.0",
+    "react-image-crop": "^11.0.6"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
